@@ -47,7 +47,21 @@ class Network:
         The effect could have been achieved by swapping l and l-1 on the code above.
         """
         self.weights=[w.transpose() for w in self.weights]
-        self.biases=[np.random.rand(sl,1) for sl in architecture]
+        self.biases=np.array([np.random.rand(sl,1) for sl in architecture[1:]]) #input layer doesn't have a bias.
+    """ 
+    feedForward- simply calculate the net output,given a specific input
+    TO DO: Add a parameter which will determine the activation function (and probably default it to sigmoid)
+    """
+    def feedForward(self,x):
+        a=x
+        for (w,b) in zip(self.weights,self.biases):
+            a=sigmoid(np.dot(w, a)+b)
+        return a
+    
+    
+    
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
 
 
 
