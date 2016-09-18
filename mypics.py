@@ -1,9 +1,32 @@
+"""
+mnistLoader.py
+~~~~~~~~~~
+
+A module to implement loading mnist data put out by professor Yann at http://yann.lecun.com/exdb/mnist/
+It assumes that the relevant gzip files are already in the working directory, and on top of that it also assumes the following
+1.Height,width (and overall image size in pixels) are 28,28 and 28*28 respectively
+2.Training dataset contains 60,000 examples, and test dataset contains 10,000 examples
+3.Files formats as specified at 18/09/2016 5:31 IST. (eg magic numbers locations,each pixel being an 0-255 integer etc)
+
+"""
+
+
+
 import os
 import gzip
 import numpy as np
 import scipy.misc as smp
 import random
 
+
+"""
+showPic(pictures,labels)
+
+given an array of picture (each picture represented by a np array),and an array of labels,
+present a random picture and its corresponding label
+
+
+"""
 
 def showPic(pictures,labels):
     numPics=len(pictures)
@@ -15,6 +38,15 @@ def showPic(pictures,labels):
     img.show()    # View in default viewer
     
     
+    
+"""
+readImages(file,numberOfPics)
+given an open images (test or training) file, formatted as specified at Yann's webpage,
+1.Skips the header (format is the same eg the header size in bytes is the same for both test and training files)
+2.reads #numberOfPics pictures from that file (no error handling whatsoever,function is not meant for usage as a generic function, but at the specific peculiar format Yann provided)
+3.closes the file
+4.returns the images as a np array.
+"""
 def readImages(file,numberOfPics):
     HEADER_SIZE_IN_BYTES=16
     PICTURE_WIDTH=28
@@ -36,6 +68,11 @@ def readImages(file,numberOfPics):
     return images
         
 
+"""
+same function as readImages, only that now the labels are being read.
+
+
+"""
 def readLabels(file,numberOfLabels):
     HEADER_SIZE_IN_BYTES_TRAINING_LABELS=8
     file.read(HEADER_SIZE_IN_BYTES_TRAINING_LABELS) #skip header
@@ -45,6 +82,13 @@ def readLabels(file,numberOfLabels):
     labels=np.asarray(labels)
     return labels
     
+    
+"""
+readData()
+
+Read the files Yann has provided and returns a tuple (training_data,valudation_data,test_data)
+Each of the _data elements  is a tuple (x,y) by itself, x being the images ndarray,y being the labels ndarray
+"""
 def readData():
     
     f=gzip.open('train-images-idx3-ubyte.gz','rb')
