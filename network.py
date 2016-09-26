@@ -5,7 +5,7 @@ a network class. This represnts our Neural network.
 a network is represented by the following elements:
 1.Its weights
 2.Its biases
-3.It's architecture.
+3.Its architecture.
 
 Given those 3, we can:
 
@@ -57,12 +57,75 @@ class Network:
         for (w,b) in zip(self.weights,self.biases):
             a=sigmoid(np.dot(w, a)+b)
         return a
+        
+        
+    #Backpropagation algorithm for calculating dC/dw and dC/db. x is the input and y is the expected output.
+    def backpropogation(self,x,y):
+        #first I will feed forward the input x,calculating everything which needs to be calculated along its path
+        activations=[x] #This will be a list of column vectors with the network's activations.
+        Zs=[] #Likewise,Zs will be a list of the z's eg w*a+b before applying the activation function
+        currentLayerOutput=x
+        for(w,b) in zip(self.weights,self.biases):
+            newZ=np.dot(w,currentLayerOutput)+b
+            Zs.append(newZ)
+            currentLayerOutput=sigmoid(newZ)
+            activations.append(currentLayerOutput)
+            
+        #Let's compute delta now. delta will be a list of the deltas for the various layers
+        delta=[]
+        #According to BP's first formula, deltaL=grad(C,a)(*)sigmoid_prime(ZL) Where L is the last layer of the network, and (*) is element wise multiplication of the two vectors (Hadamard's product)
+        cost_derivitives=cost_prime(np.asarray(activations[-1]),np.asarray(y))
+        zL=Zs[-1]
+        delta.append(np.multiply(cost_derivitives,sigmoid_prime(zL))) #np.multiply is the element wise multiplication (aka Hadamard's product).
+        #and now the actual backpropogation part begins, according to equation BP2 deltal=(w[l+1]'*delta[l+1])(*)sigmoid_prime(z[l])
+        numberOfLayers=len(self.architecture)
+        for l in range(numberOfLayers-1,1,-1): #Not including layer 1 since delta1 doesnt make sense (an error on the input?! :) )
+             #this.weights[0] is the same as the book's weight two (transfer between layer 1 and layer 2 is W2 so therefore the indexing)
+            wTimesDelta=np.dot(self.weights[l-1].transpose(),delta[0])  #w[l-1] is in fact the book's w[l+1],delta[0] is the last delta we computed
+            delta=[np.multiply(wTimesDelta,sigmoid_prime(Zs[l-2]))]+delta #same indexing story for Zs,the book's Z[2] is actually Z[0] here
+        return (Zs,delta)
+        
+    def show(self):
+        i=0
+        for w in self.weights:
+            i=i+1
+            print(("w[{}]="+str(w)) .format(str(i)))
+        i=0
+        for b in self.biases:
+            i=i+1
+            print(('b[{}]='+str(b)) .format(str(i)))
+            
+            #Set the weights and biases
+    def set(self):
+        layer=0
+        for w in self.weights:
+            layer=layer+1
+            for i in range(0,len(w.flat)):
+                w.flat[i]=(layer+1)*((-1)**layer)
+        layer=0
+        for b in self.biases:
+            layer=layer+1
+            for i in range(0,len(b.flat)):
+                b.flat[i]=layer
+            
+            
+            
+        
     
+    
+    
+    
+    
+    
+def cost_prime(output,y):
+    return output-y.reshape(output.shape)
+
     
     
 def sigmoid(x):
     return 1/(1+np.exp(-x))
 
-
+def sigmoid_prime(x):
+    return sigmoid(x)*(1-sigmoid(x))
 
     
