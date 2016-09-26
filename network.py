@@ -83,7 +83,12 @@ class Network:
              #this.weights[0] is the same as the book's weight two (transfer between layer 1 and layer 2 is W2 so therefore the indexing)
             wTimesDelta=np.dot(self.weights[l-1].transpose(),delta[0])  #w[l-1] is in fact the book's w[l+1],delta[0] is the last delta we computed
             delta=[np.multiply(wTimesDelta,sigmoid_prime(Zs[l-2]))]+delta #same indexing story for Zs,the book's Z[2] is actually Z[0] here
-        return (Zs,delta)
+        #Alright,so far we have calculated delta (which is by the way dC/db.) Now we want to calculate the matrix dC/dW.
+        #This is done using BP4 eg ain*deltaout. I will call dC/dw deltaW.
+        deltaW=[]
+        for i in range(len(delta)):
+            deltaW.append(np.dot(delta[i],activations[i].transpose()))
+        return (delta,deltaW)
         
     def show(self):
         i=0
@@ -127,5 +132,16 @@ def sigmoid(x):
 
 def sigmoid_prime(x):
     return sigmoid(x)*(1-sigmoid(x))
+
+    
+
+#Input : delta- a list containing the error vectors. Notice that delta[0] is delta2 ie the error in Layer2 (there is no point talking about delta1 ie error in the input layer)    
+def calcWeights(activations,delta):
+    weights=[]
+    for i in range(len(delta)):
+        weights.append(np.dot(delta[i],activations[i].transpose()))
+    return weights
+        
+    
 
     
