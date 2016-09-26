@@ -3,23 +3,22 @@
 import network
 import numpy as np
 import random
-net=network.Network([5,3,4,2])
-net.show()
-i=np.array([1,1])
-i=i.reshape(2,1)
-y=i*2
-i=np.array([1,1,1,1,1])
-i=i.reshape(5,1)
+import mnistLoader as loader
+net=network.Network([784,40,10])
 
-sig=network.sigmoid
+#First of all,load all the data...
+print('Loading the Data....')
+(training_data, validation_data, test_data)=loader.readData()
+training_examples=training_data[0].transpose()
+training_labels=[]
+for x in training_data[1]:
+    currentLabel=np.zeros(10)
+    currentLabel[x]=1
+    training_labels.append(currentLabel)
+    
+training_labels=(np.asarray(training_labels)).transpose()
+m=training_examples.shape[1]
 
-(deltaB,deltaW)=net.backpropogation(i,y)
+training_data=[(training_examples[:,i],training_labels[:,i]) for i in range(m)]
 
-random.seed(0)
-
-#x is some ndarray, return the same object modified such that its elements are random int numbers
-def randIt(x):
-
-    for i in range(len(x.flat)):
-        x.flat[i]=random.randint(1,10)
-    return
+net.stochastic_grad(training_data,learningRate=0.1,epochs=50,batchSize=0)

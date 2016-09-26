@@ -19,23 +19,7 @@ import scipy.misc as smp
 import random
 
 
-"""
-showPic(pictures,labels)
 
-given an array of picture (each picture represented by a np array),and an array of labels,
-present a random picture and its corresponding label
-
-
-"""
-
-def showPic(pictures,labels):
-    numPics=len(pictures)
-    chosenPicIndex=random.randint(0,numPics)
-    PICTURE_WIDTH=28
-    PICTURE_HEIGHT=28
-    img = smp.toimage( pictures[chosenPicIndex].reshape(PICTURE_WIDTH,PICTURE_HEIGHT) )       # Create a PIL image
-    print('The label for the pic is:'+str(labels[chosenPicIndex]))
-    img.show()    # View in default viewer
     
     
     

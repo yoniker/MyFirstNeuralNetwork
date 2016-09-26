@@ -19,6 +19,9 @@ Given those 3, we can:
 
 
 import numpy as np
+import random
+
+import utility
 
 
 class Network:
@@ -60,6 +63,7 @@ class Network:
         
         
     #Backpropagation algorithm for calculating dC/dw and dC/db. x is the input and y is the expected output.
+    #The output will be dC/dW and dC/dB, which are lists of the same size as the network weights and biases respectively.
     def backpropogation(self,x,y):
         #first I will feed forward the input x,calculating everything which needs to be calculated along its path
         activations=[x] #This will be a list of column vectors with the network's activations.
@@ -88,7 +92,42 @@ class Network:
         deltaW=[]
         for i in range(len(delta)):
             deltaW.append(np.dot(delta[i],activations[i].transpose()))
-        return (delta,deltaW)
+        return (delta,deltaW) #again, remember that according to BP3 delta is dC/dB...
+        
+        
+        
+        
+    """
+
+    Stochastic gradient descent.
+    Input:
+    
+    training_data - a list of tuples (example,label) 
+
+    """
+    
+    def stochastic_grad(self,training_data,learningRate,epochs=50,batchSize=0):
+    #So basically stochastic grad is the same as gradient descent when batch size is same as the size of our learning set.
+    #That will be the default value then.
+        if batchSize==0:
+            batchSize=len(training_data)
+        random.seed(0)
+        random.shuffle(training_data)
+        training_examples=[]
+        training_labels=[]
+        training_examples[:],training_labels[:]=zip(*training_data)     
+        utility.showPic(training_examples,training_labels)
+        return
+    
+    
+        
+    
+    
+    
+        
+            
+            
+                   
         
     def show(self):
         i=0
@@ -141,6 +180,9 @@ def calcWeights(activations,delta):
     for i in range(len(delta)):
         weights.append(np.dot(delta[i],activations[i].transpose()))
     return weights
+    
+    
+    
         
     
 
