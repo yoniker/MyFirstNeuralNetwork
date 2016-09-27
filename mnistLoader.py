@@ -17,6 +17,7 @@ import gzip
 import numpy as np
 import scipy.misc as smp
 import random
+import utility
 
 
 
@@ -37,6 +38,7 @@ def readImages(file,numberOfPics):
     PICTURE_HEIGHT=28
     PICTURE_SIZE_IN_PIXELS=PICTURE_HEIGHT*PICTURE_WIDTH
     HEADER_SIZE_IN_BYTES=16
+    COLOR_MAX_INTENSITY=255
     #skip the header
     file.read(HEADER_SIZE_IN_BYTES)
     images=[]
@@ -45,10 +47,11 @@ def readImages(file,numberOfPics):
         picture=[ord(n) for n in currentPicInBytes] #This translates the string to numbers
         picInNp=np.asarray(picture,dtype=float)
         #If I want it in a viewable format: picInNp=picInNp.reshape(PICTURE_HEIGHT,PICTURE_WIDTH)
-        picInNp=picInNp/255
+        picInNp=picInNp/COLOR_MAX_INTENSITY
         images.append(picInNp)
     file.close()
-    images=np.asarray(images)
+    images=(np.asarray(images)).transpose()
+    
     return images
         
 
@@ -63,8 +66,12 @@ def readLabels(file,numberOfLabels):
     allLabelsInString=file.read(numberOfLabels)
     labels=[ord(n) for n in allLabelsInString]
     file.close()
-    labels=np.asarray(labels)
-    return labels
+    #And now after reading the numeric (0-9) value of the label,let's convert it into a vector.
+    vectorizedLabels=[]
+    for label in labels:
+        currentLabel=utility.vectorizeDigit(label)
+        vectorizedLabels.append(currentLabel)
+    return np.asarray(vectorizedLabels).transpose()
     
     
 """
@@ -90,7 +97,7 @@ def readData():
     #And now let's 'cut' the training data
     trainImages=trainImages[:50000,:]
     trainLabels=trainLabels[:50000]
-    
+    #training_data=[(image,label) for image,label in zip(trainImages,trainLabels)]
     training_data=(trainImages,trainLabels)
     validation_data=(validImages,validLabels)
     test_data=(testImages,testLabels)

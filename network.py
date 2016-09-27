@@ -56,7 +56,7 @@ class Network:
     TO DO: Add a parameter which will determine the activation function (and probably default it to sigmoid)
     """
     def feedForward(self,x):
-        a=x
+        a=x.reshape(len(x.flat),1)
         for (w,b) in zip(self.weights,self.biases):
             a=sigmoid(np.dot(w, a)+b)
         return a
@@ -66,6 +66,8 @@ class Network:
     #The output will be dC/dW and dC/dB, which are lists of the same size as the network weights and biases respectively.
     def backpropogation(self,x,y):
         #first I will feed forward the input x,calculating everything which needs to be calculated along its path
+        x=x.reshape(len(x.flat),1)
+        y=y.reshape(len(y.flat),1)
         activations=[x] #This will be a list of column vectors with the network's activations.
         Zs=[] #Likewise,Zs will be a list of the z's eg w*a+b before applying the activation function
         currentLayerOutput=x
@@ -106,7 +108,7 @@ class Network:
 
     """
     
-    def stochastic_grad(self,training_data,learningRate,epochs=50,batchSize=0):
+    def stochastic_grad(self,training_data,learningRate,epochs=50,batchSize=0,test_data=None):
     #So basically stochastic grad is the same as gradient descent when batch size is same as the size of our learning set.
     #That will be the default value then.
         if batchSize==0:
@@ -115,9 +117,57 @@ class Network:
         random.shuffle(training_data)
         training_examples=[]
         training_labels=[]
-        training_examples[:],training_labels[:]=zip(*training_data)     
-        utility.showPic(training_examples,training_labels)
+        training_examples[:],training_labels[:]=zip(*training_data)
+        
+        
+        
+        for epoch in range(epochs):
+            i=0.0
+            sum_dCdW=[np.zeros(weight.shape) for weight in self.weights]
+            sum_dCdB=[np.zeros(bias.shape) for bias in self.biases]
+            for (example,label) in zip(training_examples,training_labels):
+                i=i+1
+                #print 'summing for example {}'.format(i),
+                #utility.update_progress(i/len(training_examples))
+                
+                (dCdB,dCdW)=self.backpropogation(example,label)
+                sum_dCdW=[sum+dcdw for sum,dcdw in zip(sum_dCdW,dCdW)] #sum+=dcdw, unfortunately in python the plus operator on lists just concatenates them :)
+                sum_dCdB=[sum+dcdb for sum,dcdb in zip(sum_dCdB,dCdB)]
+                
+            self.biases=[currentBias-(float(learningRate)/batchSize)*theSum for currentBias,theSum in zip(self.biases,sum_dCdB)]
+            self.weights=[currentWeight-(float(learningRate)/batchSize)*theSum for currentWeight,theSum in zip(self.weights,sum_dCdW)]
+            if test_data:
+                percentsCorrect,_,_=self.evaluate(test_data)
+                print('after {} epochs I am right at {} percents of tests'.format(epoch,100*percentsCorrect))
+            
+            
+        
+        
+        
         return
+        
+    """
+    evaluate. 
+    Input- a tuple (x,y) where x and y are np arrays of examples and their labels
+    """
+    def evaluate(self, test_data):
+    
+        test_examples=test_data[0]
+        test_labels=test_data[1]
+        m=test_examples.shape[1]
+        correct=[]
+        wrong=[]
+        for i in range(m):
+            label=test_labels[:,i]
+            test_example=test_examples[:,i]
+            result=np.argmax(self.feedForward(test_example))
+            result=utility.vectorizeDigit(result)
+            if np.array_equal(label,result):
+                correct.append((test_example,label))
+            else:
+                wrong.append((test_example,label))
+            
+        return len(correct)/float(m),correct,wrong
     
     
         
@@ -167,10 +217,10 @@ def cost_prime(output,y):
     
     
 def sigmoid(x):
-    return 1/(1+np.exp(-x))
+    return 1.0/(1+np.exp(-x))
 
 def sigmoid_prime(x):
-    return sigmoid(x)*(1-sigmoid(x))
+    return sigmoid(x)*(1.0-sigmoid(x))
 
     
 
@@ -180,6 +230,20 @@ def calcWeights(activations,delta):
     for i in range(len(delta)):
         weights.append(np.dot(delta[i],activations[i].transpose()))
     return weights
+
+    
+    
+    
+def getSize(x):
+    size=0
+    for sth in x:
+        itsShape=sth.shape
+        if len(itsShape)==1:
+            size=size+itsShape[0]
+        else:
+            size=size+itsShape[0]*itsShape[1]
+            
+    return size
     
     
     
