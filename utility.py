@@ -14,12 +14,15 @@ I put the default picture height and weight as 28 since this is the size of pics
 
 """
 
-def showPic(pictures,labels,picture_width=28,picture_height=28):
+def showPic(pictures,labels,net=None,picture_width=28,picture_height=28):
     numPics=len(pictures)
-    random.seed(0)
-    chosenPicIndex=random.randint(0,numPics)
+    chosenPicIndex=random.randint(0,numPics-1)
+    print("i've chosen index {}".format(chosenPicIndex))
     img = smp.toimage( pictures[chosenPicIndex].reshape(picture_width,picture_height) )       # Create a PIL image
     print('The label for the pic is:'+str(labels[chosenPicIndex]))
+    if net:
+        result=np.argmax(net.feedForward(pictures[chosenPicIndex]))
+        print('the net labeled it as {}'.format(result))
     img.show()    # View in default viewer
     
     
@@ -57,3 +60,14 @@ def vectorizeDigit(n):
     theVector=np.zeros(10)
     theVector[n]=1
     return theVector
+
+    
+    
+#input: list of tuples (a,b) (for example it could be (example,label))
+#output: two lists, one cotaining the first elemnt in the tuples, the second containing that second element in the tuple.
+def separateListOfTuples(listOfTuples):
+
+        a=[]
+        b=[]
+        a[:],b[:]=zip(*listOfTuples)
+        return(a,b)

@@ -113,29 +113,17 @@ class Network:
     #That will be the default value then.
         if batchSize==0:
             batchSize=len(training_data)
-        random.seed(0)
-        random.shuffle(training_data)
-        training_examples=[]
-        training_labels=[]
-        training_examples[:],training_labels[:]=zip(*training_data)
+        
         
         
         
         for epoch in range(epochs):
             i=0.0
-            sum_dCdW=[np.zeros(weight.shape) for weight in self.weights]
-            sum_dCdB=[np.zeros(bias.shape) for bias in self.biases]
-            for (example,label) in zip(training_examples,training_labels):
-                i=i+1
-                #print 'summing for example {}'.format(i),
-                #utility.update_progress(i/len(training_examples))
-                
-                (dCdB,dCdW)=self.backpropogation(example,label)
-                sum_dCdW=[sum+dcdw for sum,dcdw in zip(sum_dCdW,dCdW)] #sum+=dcdw, unfortunately in python the plus operator on lists just concatenates them :)
-                sum_dCdB=[sum+dcdb for sum,dcdb in zip(sum_dCdB,dCdB)]
-                
-            self.biases=[currentBias-(float(learningRate)/batchSize)*theSum for currentBias,theSum in zip(self.biases,sum_dCdB)]
-            self.weights=[currentWeight-(float(learningRate)/batchSize)*theSum for currentWeight,theSum in zip(self.weights,sum_dCdW)]
+            random.seed(0)
+            random.shuffle(training_data)
+            batches=[training_data[k:k+batchSize] for k in range(0,len(training_data),batchSize)] #Notice that if m%batchsize !=0 then the last batch will be smaller than batchSize. TODO If it is too small that might be something that we want to change
+            for batch in batches:
+                 self.trainOnBatch(batch,learningRate)
             if test_data:
                 percentsCorrect,_,_=self.evaluate(test_data)
                 print('after {} epochs I am right at {} percents of tests'.format(epoch,100*percentsCorrect))
@@ -145,6 +133,28 @@ class Network:
         
         
         return
+        
+        
+    
+    #trainOnBatch : this method actually does the training for [stochastic] gradient descent.
+    
+    #input : batch- a list of tuples (example,label)
+    
+    def trainOnBatch(self,batch,learningRate):
+        batchSize=len(batch)
+        (training_examples,training_labels)=utility.separateListOfTuples(batch)
+        sum_dCdW=[np.zeros(weight.shape) for weight in self.weights]
+        sum_dCdB=[np.zeros(bias.shape) for bias in self.biases]
+        for (example,label) in zip(training_examples,training_labels):
+            (dCdB,dCdW)=self.backpropogation(example,label)
+            sum_dCdW=[sum+dcdw for sum,dcdw in zip(sum_dCdW,dCdW)] #sum+=dcdw, unfortunately in python the plus operator on lists just concatenates them :)
+            sum_dCdB=[sum+dcdb for sum,dcdb in zip(sum_dCdB,dCdB)]
+            
+        self.biases=[currentBias-(float(learningRate)/batchSize)*theSum for currentBias,theSum in zip(self.biases,sum_dCdB)]
+        self.weights=[currentWeight-(float(learningRate)/batchSize)*theSum for currentWeight,theSum in zip(self.weights,sum_dCdW)]
+        return
+    
+    
         
     """
     evaluate. 
@@ -234,16 +244,7 @@ def calcWeights(activations,delta):
     
     
     
-def getSize(x):
-    size=0
-    for sth in x:
-        itsShape=sth.shape
-        if len(itsShape)==1:
-            size=size+itsShape[0]
-        else:
-            size=size+itsShape[0]*itsShape[1]
-            
-    return size
+
     
     
     

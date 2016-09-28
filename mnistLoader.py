@@ -92,11 +92,11 @@ def readData():
     f=gzip.open('t10k-labels-idx1-ubyte.gz','rb')
     testLabels=readLabels(f,10000)
     #Alright, now let's separate training data into 'training' (50k examples) and cv (10k)
-    validImages=trainImages[50000:,:]
-    validLabels=trainLabels[50000:]
+    validImages=trainImages[:,50000:]
+    validLabels=trainLabels[:,50000:]
     #And now let's 'cut' the training data
-    trainImages=trainImages[:50000,:]
-    trainLabels=trainLabels[:50000]
+    trainImages=trainImages[:,:50000]
+    trainLabels=trainLabels[:,:50000]
     #training_data=[(image,label) for image,label in zip(trainImages,trainLabels)]
     training_data=(trainImages,trainLabels)
     validation_data=(validImages,validLabels)
