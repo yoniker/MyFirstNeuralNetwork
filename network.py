@@ -24,6 +24,27 @@ import random
 import utility
 
 
+class CrossEntropyCost:
+
+    @staticmethod
+    def fn(a, y):
+        return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)))
+
+    @staticmethod
+    def derivative(z, a, y):
+        return (a-y)
+        
+class MSECost:
+
+    @staticmethod
+    def fn(a, y):
+        return np.sum((a-y)**2)/2
+
+    @staticmethod
+    def derivative(z, a, y):
+        return (a-y)*sigmoid_prime(z)
+
+
 class Network:
 
 
@@ -41,8 +62,9 @@ class Network:
         2*3,3*4,4*5. I achieve that effect by zipping together two lists: [2,3,4] and [3,4,5] eg one without the last neurons layer, and one without the first.
         a (n,m) matrix of random Gaussian values is achieved by the command numpy.random.randn(n,m)
         I will note those lists we iterate over as l-1(lm1) and l
+        
         """
-        self.weights=[np.random.randn(lm1,l) for (lm1,l) in zip(architecture[:-1],architecture[1:])]
+        self.weights=[np.random.randn(lm1,l)/np.sqrt(lm1) for (lm1,l) in zip(architecture[:-1],architecture[1:])]
         """
         Just a small technical detail: we need to transpose each of the weights matrix. Why? well..
         Imagine that we have on layer l-1 4 neurons and on layer l 5 neurons, and that each activations of neurons is represented by a column vector.
@@ -53,7 +75,7 @@ class Network:
         self.biases=np.array([np.random.rand(sl,1) for sl in architecture[1:]]) #input layer doesn't have a bias.
     """ 
     feedForward- simply calculate the net output,given a specific input
-    TO DO: Add a parameter which will determine the activation function (and probably default it to sigmoid)
+    TODO: Add a parameter which will determine the activation function (and probably default it to sigmoid)
     """
     def feedForward(self,x):
         a=x.reshape(len(x.flat),1)
@@ -64,7 +86,7 @@ class Network:
         
     #Backpropagation algorithm for calculating dC/dw and dC/db. x is the input and y is the expected output.
     #The output will be dC/dW and dC/dB, which are lists of the same size as the network weights and biases respectively.
-    def backpropogation(self,x,y):
+    def backpropogation(self,x,y,cost_derivative):
         #first I will feed forward the input x,calculating everything which needs to be calculated along its path
         x=x.reshape(len(x.flat),1)
         y=y.reshape(len(y.flat),1)
@@ -79,9 +101,9 @@ class Network:
             
         #Let's compute delta now. delta will be a list of the deltas for the various layers
         delta=[]
-        #According to BP's first formula, deltaL=grad(C,a)(*)sigmoid_prime(ZL) Where L is the last layer of the network, and (*) is element wise multiplication of the two vectors (Hadamard's product)
-        cost_derivitives=cost_prime(np.asarray(activations[-1]),np.asarray(y))
         zL=Zs[-1]
+        #According to BP's first formula, deltaL=grad(C,a)(*)sigmoid_prime(ZL) Where L is the last layer of the network, and (*) is element wise multiplication of the two vectors (Hadamard's product)
+        cost_derivitives=cost_derivative(zL,np.asarray(activations[-1]),np.asarray(y))
         delta.append(np.multiply(cost_derivitives,sigmoid_prime(zL))) #np.multiply is the element wise multiplication (aka Hadamard's product).
         #and now the actual backpropogation part begins, according to equation BP2 deltal=(w[l+1]'*delta[l+1])(*)sigmoid_prime(z[l])
         numberOfLayers=len(self.architecture)
@@ -108,7 +130,7 @@ class Network:
 
     """
     
-    def stochastic_grad(self,training_data,learningRate,epochs=50,batchSize=0,test_data=None):
+    def stochastic_grad(self,training_data,learningRate,epochs=50,batchSize=0,test_data=None,cost=MSECost,regularization_factor=0):
     #So basically stochastic grad is the same as gradient descent when batch size is same as the size of our learning set.
     #That will be the default value then.
         if batchSize==0:
@@ -123,10 +145,10 @@ class Network:
             random.shuffle(training_data)
             batches=[training_data[k:k+batchSize] for k in range(0,len(training_data),batchSize)] #Notice that if m%batchsize !=0 then the last batch will be smaller than batchSize. TODO If it is too small that might be something that we want to change
             for batch in batches:
-                 self.trainOnBatch(batch,learningRate)
+                 self.trainOnBatch(batch,learningRate,cost.derivative,regularization_factor,len(training_data))
             if test_data:
                 percentsCorrect,_,_=self.evaluate(test_data)
-                print('after {} epochs I am right at {} percents of tests'.format(epoch,100*percentsCorrect))
+                print('after {} epochs I am right at {} percents of tests'.format(epoch+1,100*percentsCorrect))
             
             
         
@@ -140,18 +162,20 @@ class Network:
     
     #input : batch- a list of tuples (example,label)
     
-    def trainOnBatch(self,batch,learningRate):
+    def trainOnBatch(self,batch,learningRate,cost_derivative,regularization_factor,training_data_size):
         batchSize=len(batch)
         (training_examples,training_labels)=utility.separateListOfTuples(batch)
         sum_dCdW=[np.zeros(weight.shape) for weight in self.weights]
         sum_dCdB=[np.zeros(bias.shape) for bias in self.biases]
         for (example,label) in zip(training_examples,training_labels):
-            (dCdB,dCdW)=self.backpropogation(example,label)
+            (dCdB,dCdW)=self.backpropogation(example,label,cost_derivative)
             sum_dCdW=[sum+dcdw for sum,dcdw in zip(sum_dCdW,dCdW)] #sum+=dcdw, unfortunately in python the plus operator on lists just concatenates them :)
             sum_dCdB=[sum+dcdb for sum,dcdb in zip(sum_dCdB,dCdB)]
             
         self.biases=[currentBias-(float(learningRate)/batchSize)*theSum for currentBias,theSum in zip(self.biases,sum_dCdB)]
-        self.weights=[currentWeight-(float(learningRate)/batchSize)*theSum for currentWeight,theSum in zip(self.weights,sum_dCdW)]
+        #When taking into consideration regularization, we need to update w as w<- w*(1-lambda*alpha/batchSize)-something times the derivative of w...
+        reg_factor=float(learningRate)*regularization_factor/training_data_size
+        self.weights=[currentWeight*(1-reg_factor)-(float(learningRate)/batchSize)*theSum for currentWeight,theSum in zip(self.weights,sum_dCdW)]
         return
     
     
